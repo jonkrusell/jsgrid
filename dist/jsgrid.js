@@ -148,6 +148,8 @@
 
         onRefreshing: $.noop,
         onRefreshed: $.noop,
+        onPageChanged: $.noop,
+        onItemChanged: $.noop,
         onItemDeleting: $.noop,
         onItemDeleted: $.noop,
         onItemInserting: $.noop,
@@ -726,10 +728,14 @@
         },
 
         _setSortingCss: function() {
-            var fieldIndex = $.inArray(this._sortField, $.grep(this.fields, function(f) { return f.visible; }));
+            var fieldIndex = this._visibleFieldIndex(this._sortField);
 
             this._headerRow.find("th").eq(fieldIndex)
                 .addClass(this._sortOrder === SORT_ORDER_ASC ? this.sortAscClass : this.sortDescClass);
+        },
+
+        _visibleFieldIndex: function(field) {
+            return $.inArray(field, $.grep(this.fields, function(f) { return f.visible; }));
         },
 
         _sortData: function() {
@@ -972,6 +978,10 @@
             if(pageIndex > firstDisplayingPage + pageButtonCount - 1) {
                 this._firstDisplayingPage = pageIndex - pageButtonCount + 1;
             }
+            
+            this._callEventHandler(this.onPageChanged, {
+                pageIndex: pageIndex
+            });
         },
 
         _controllerCall: function(method, param, isCanceled, doneCallback) {
@@ -1122,7 +1132,7 @@
                 row: $row
             };
 
-            this._eachField(function(field, index) {
+            this._eachField(function(field) {
                 if(!field.validate)
                     return;
 
@@ -1131,7 +1141,7 @@
                     rules: field.validate
                 }, args));
 
-                this._setCellValidity($row.children().eq(index), errors);
+                this._setCellValidity($row.children().eq(this._visibleFieldIndex(field)), errors);
 
                 if(!errors.length)
                     return;
@@ -1209,23 +1219,43 @@
             $editRow.insertBefore($row);
             $row.data(JSGRID_EDIT_ROW_DATA_KEY, $editRow);
         },
+        
+        _addEditCellChangeEvents: function(renderedEditRow, item, itemIndex) {
+            var onItemChangedFunction = this.onItemChanged;
+            renderedEditRow.find('input[type=text], select, input[type=number], input[type=checkbox], textarea')
+                .on('change', function () {
+                    onItemChangedFunction({
+                        item: item,
+                        itemIndex: itemIndex
+                    });
+                });
+            return renderedEditRow;
+        },
 
         _createEditRow: function(item) {
             if($.isFunction(this.editRowRenderer)) {
-                return $(this.editRowRenderer(item, this._itemIndex(item)));
+                var $result = $(this.editRowRenderer(item, this._itemIndex(item)));
+                if($.isFunction(this.onItemChanged)) {
+                    $result = this._addEditCellChangeEvents($result, item, this._itemIndex(item));
+                }
+                return $result;
+            } else {
+                var $result = $("<tr>").addClass(this.editRowClass);
+
+                this._eachField(function (field) {
+                    var fieldValue = this._getItemFieldValue(item, field);
+
+                    this._prepareCell("<td>", field, "editcss")
+                        .append(field.editTemplate ? field.editTemplate(fieldValue, item) : "")
+                        .appendTo($result);
+                });
+
+                if ($.isFunction(this.onItemChanged)) {
+                    $result = this._addEditCellChangeEvents($result, item, this._itemIndex(item));
+                }
+
+                return $result;
             }
-
-            var $result = $("<tr>").addClass(this.editRowClass);
-
-            this._eachField(function(field) {
-                var fieldValue = this._getItemFieldValue(item, field);
-
-                this._prepareCell("<td>", field, "editcss")
-                    .append(field.editTemplate ? field.editTemplate(fieldValue, item) : "")
-                    .appendTo($result);
-            });
-
-            return $result;
         },
 
         updateItem: function(item, editedItem) {
@@ -1749,14 +1779,14 @@
         },
 
         minLength: {
-            message: "Field value is too long",
+            message: "Field value is too short",
             validator: function(value, _, param) {
                 return value.length >= param;
             }
         },
 
         maxLength: {
-            message: "Field value is too short",
+            message: "Field value is too long",
             validator: function(value, _, param) {
                 return value.length <= param;
             }
@@ -1780,14 +1810,14 @@
         },
 
         min: {
-            message: "Field value is too large",
+            message: "Field value is too small",
             validator: function(value, _, param) {
                 return value >= param;
             }
         },
 
         max: {
-            message: "Field value is too small",
+            message: "Field value is too large",
             validator: function(value, _, param) {
                 return value <= param;
             }

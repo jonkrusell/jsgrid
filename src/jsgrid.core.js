@@ -143,6 +143,7 @@
         onRefreshing: $.noop,
         onRefreshed: $.noop,
         onPageChanged: $.noop,
+        onItemChanged: $.noop,
         onItemDeleting: $.noop,
         onItemDeleted: $.noop,
         onItemInserting: $.noop,
@@ -1212,23 +1213,43 @@
             $editRow.insertBefore($row);
             $row.data(JSGRID_EDIT_ROW_DATA_KEY, $editRow);
         },
+        
+        _addEditCellChangeEvents: function(renderedEditRow, item, itemIndex) {
+            var onItemChangedFunction = this.onItemChanged;
+            renderedEditRow.find('input[type=text], select, input[type=number], input[type=checkbox], textarea')
+                .on('change', function () {
+                    onItemChangedFunction({
+                        item: item,
+                        itemIndex: itemIndex
+                    });
+                });
+            return renderedEditRow;
+        },
 
         _createEditRow: function(item) {
             if($.isFunction(this.editRowRenderer)) {
-                return $(this.editRowRenderer(item, this._itemIndex(item)));
+                var $result = $(this.editRowRenderer(item, this._itemIndex(item)));
+                if($.isFunction(this.onItemChanged)) {
+                    $result = this._addEditCellChangeEvents($result, item, this._itemIndex(item));
+                }
+                return $result;
+            } else {
+                var $result = $("<tr>").addClass(this.editRowClass);
+
+                this._eachField(function (field) {
+                    var fieldValue = this._getItemFieldValue(item, field);
+
+                    this._prepareCell("<td>", field, "editcss")
+                        .append(field.editTemplate ? field.editTemplate(fieldValue, item) : "")
+                        .appendTo($result);
+                });
+
+                if ($.isFunction(this.onItemChanged)) {
+                    $result = this._addEditCellChangeEvents($result, item, this._itemIndex(item));
+                }
+
+                return $result;
             }
-
-            var $result = $("<tr>").addClass(this.editRowClass);
-
-            this._eachField(function(field) {
-                var fieldValue = this._getItemFieldValue(item, field);
-
-                this._prepareCell("<td>", field, "editcss")
-                    .append(field.editTemplate ? field.editTemplate(fieldValue, item) : "")
-                    .appendTo($result);
-            });
-
-            return $result;
         },
 
         updateItem: function(item, editedItem) {

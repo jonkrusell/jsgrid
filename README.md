@@ -1225,6 +1225,22 @@ $("#grid").jsGrid({
 
 ```
 
+### onItemChanged
+
+Fires after focus leaves an item's field and the field has been changed.
+
+Has the following arguments:
+
+```javascript
+
+{
+    item                // changed item
+    itemIndex           // changed item index
+}
+
+```
+
+
 ### onError
 Fires when controller handler promise failed.
 

@@ -88,9 +88,22 @@
     padding: .3em .5em;
 }
 
+
+.jsgrid-edit-row-no-padding input,
+.jsgrid-edit-row-no-padding textarea,
+.jsgrid-edit-row-no-padding select {
+    width: 100%;
+}
+
+
 .jsgrid-filter-row input[type='checkbox'],
 .jsgrid-edit-row input[type='checkbox'],
 .jsgrid-insert-row input[type='checkbox'] {
+    width: auto;
+}
+
+
+.jsgrid-edit-row-no-padding input[type='checkbox'] {
     width: auto;
 }
 

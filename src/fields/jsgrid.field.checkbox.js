@@ -15,7 +15,7 @@
         itemTemplate: function(value) {
             return this._createCheckbox().prop({
                 checked: value,
-                disabled: true
+                disabled: !this._grid.enableCheckBoxesBeforeEditing
             });
         },
 

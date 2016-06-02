@@ -30,6 +30,7 @@
         loadData: $.noop,
         insertItem: $.noop,
         updateItem: $.noop,
+        softUpdateItem: $.noop,
         deleteItem: $.noop
     };
 
@@ -63,7 +64,38 @@
 
         rowClick: function(args) {
             if(this.editing) {
+                if (this.updateOnRowChange) {
+                    this.softUpdateItem();
+                }
                 this.editItem($(args.event.target).closest("tr"));
+                if (this.autoFocusOnInputAfterRowClick) {
+                    var x = args.event.clientX, y = args.event.clientY,
+                        elementMouseIsOver = document.elementFromPoint(x, y);
+                    if (elementMouseIsOver) {
+                        switch (elementMouseIsOver.nodeName.toLowerCase()) {
+                            case "select":
+                                {
+                                    try {
+                                        var event;
+                                        event = document.createEvent('MouseEvents');
+                                        event.initMouseEvent('mousedown', true, true, window);
+                                        elementMouseIsOver.dispatchEvent(event);
+                                    } catch (e) {
+
+                                    }
+                                    break;
+                                }
+                            case "input":
+                            case "textarea":
+                                {
+                                    elementMouseIsOver.focus();
+                                    break;
+                                }
+                            default:
+                                break;
+                        }
+                    }
+                }
             }
         },
         rowDoubleClick: $.noop,
@@ -86,6 +118,9 @@
         editing: false,
         editRowRenderer: null,
         editRowClass: "jsgrid-edit-row",
+        updateOnRowChange: false,
+        autoFocusOnInputAfterRowClick: false,
+        enableCheckBoxesBeforeEditing: false,
 
         confirmDeleting: true,
         deleteConfirm: "Are you sure?",
@@ -1264,6 +1299,25 @@
                 return;
 
             return this._updateRow($row, editedItem);
+        },
+
+        softUpdateItem: function () {
+            if (this._editingRow) {
+                var $updatingRow = this._editingRow;
+                var $currentlyEditingRow = $updatingRow.data(JSGRID_EDIT_ROW_DATA_KEY);
+                var editedItem = this._getValidatedEditedItem();
+
+                if (!editedItem)
+                    return;
+
+                var updatingItem = $updatingRow.data(JSGRID_ROW_DATA_KEY),
+                    updatingItemIndex = this._itemIndex(updatingItem);
+                this.data[updatingItemIndex] = editedItem;
+
+                var $updatedRow = this._createRow(editedItem, updatingItemIndex);
+                $updatingRow.replaceWith($updatedRow);
+                $updatingRow.data(JSGRID_EDIT_ROW_DATA_KEY, $currentlyEditingRow);
+            }
         },
 
         _getValidatedEditedItem: function() {

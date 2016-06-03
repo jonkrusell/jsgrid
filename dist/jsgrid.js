@@ -1978,6 +1978,7 @@
 
         autosearch: true,
 		readOnly: false,
+        plainTextOnEdit: false,
 
         filterTemplate: function() {
             if(!this.filtering)
@@ -2010,6 +2011,10 @@
                 return this.itemTemplate(value);
 
             var $result = this.editControl = this._createTextBox();
+            if(this.plainTextOnEdit) {
+                $result.text(value);
+                return $result;
+            }
             $result.val(value);
             return $result;
         },
@@ -2023,10 +2028,16 @@
         },
 
         editValue: function() {
+            if (this.plainTextOnEdit) {
+                return this.editControl.text();
+            }
             return this.editControl.val();
         },
 
         _createTextBox: function() {
+            if (this.plainTextOnEdit) {
+                return $("<span>");
+            }
             return $("<input>").attr("type", "text")
                 .prop("readonly", !!this.readOnly);
         }

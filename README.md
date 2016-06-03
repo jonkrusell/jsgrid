@@ -157,7 +157,11 @@ The config object may contain following options (default values are specified be
     filterRowRenderer: null,
     insertRowRenderer: null,
     editRowRenderer: null,
-    pagerRenderer: null
+    pagerRenderer: null,
+    
+    updateOnRowChange: false,
+    autoFocusOnInputAfterRowClick: false,
+    enableCheckBoxesBeforeEditing: false
 }
 
 ```
@@ -488,6 +492,15 @@ A function to customize pager rendering. The function accepts a single argument 
 
 The function should return markup as a string, jQueryElement or DomNode representing the pager.
 If `pagerRenderer` is specified, then `pagerFormat` option will be ignored.
+
+### updateOnRowChange (default `false`)
+A boolean value specifying whether to call softUpdateItem() when a new row is selected.
+
+### autoFocusOnInputAfterRowClick (default `false`)
+A boolean value specifying whether to focus on or expand the input directly under the pointer when a row is clicked.
+
+### enableCheckBoxesBeforeEditing (default `false`)
+A boolean value specifying whether to allow checkboxes to be modified before the row is clicked.
 
 
 ## Grid Fields
@@ -1032,6 +1045,15 @@ Shows next set of pages, when total amount of pages more than `pageButtonCount`.
 ```javascript
 
 $("#grid").jsGrid("showNextPages");
+
+```
+
+### softUpdateItem()
+Updates the item currently being edited without calling callbacks and without cancelling editing of the current item.
+
+```javascript
+
+$("#grid").jsGrid("softUpdateItem");
 
 ```
 

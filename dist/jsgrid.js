@@ -92,6 +92,14 @@
                                     break;
                                 }
                             case "input":
+                                {
+                                    if (elementMouseIsOver.getAttribute('type') === 'checkbox') {
+                                        elementMouseIsOver.checked = !elementMouseIsOver.checked;
+                                    } else {
+                                        elementMouseIsOver.focus();
+                                    }
+                                    break;
+                                }
                             case "textarea":
                                 {
                                     elementMouseIsOver.focus();
@@ -482,6 +490,9 @@
                 if(this.sorting && field.sorting) {
                     $th.addClass(this.sortableClass)
                         .on("click", $.proxy(function() {
+                            if (this.updateOnRowChange) {
+                                this.softUpdateItem();
+                            }
                             this.sort(index);
                         }, this));
                 }

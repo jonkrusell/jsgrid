@@ -397,6 +397,7 @@
 
             this._container.addClass(this.containerClass)
                 .css("position", "relative")
+                .append(this._createSuperHeader())
                 .append(this._createHeader())
                 .append(this._createBody());
 
@@ -428,6 +429,12 @@
 
             this._container.empty()
                 .css({ position: "", width: "", height: "" });
+        },
+        
+        _createSuperHeader: function () {
+            var $superHeader = $("<div>");
+
+            return $superHeader;
         },
 
         _createHeader: function() {

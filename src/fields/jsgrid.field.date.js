@@ -20,6 +20,7 @@
 
         css: "date-field",
         align: "center",
+        readOnly: false,
 
         sorter: function (date1, date2) {
             return new Date(date1) - new Date(date2);
@@ -37,6 +38,9 @@
         },
 
         editTemplate: function (value) {
+            if (this.readOnly) {
+                return this._editPicker = $("<span>").text(this.getDateString(new Date(value)));
+            }
             if (this.checkForDatePicker()) {
                 return this._editPicker = $("<input>").datepicker().datepicker("setDate", new Date(value));
             }
@@ -51,6 +55,9 @@
         },
 
         editValue: function () {
+            if (this.readOnly) {
+                return new Date(this._editPicker.text());
+            }
             if (this.checkForDatePicker()) {
                 return this._editPicker.datepicker("getDate").toISOString();
             }

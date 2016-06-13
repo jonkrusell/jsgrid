@@ -2017,11 +2017,12 @@
             if(!this.editing)
                 return this.itemTemplate(value);
 
-            var $result = this.editControl = this._createTextBox();
-            if(this.plainTextOnEdit) {
-                $result.text(value);
+             if (this.plainTextOnEdit) {
+                var $result = this.editControl = $("<span>").text(value);
                 return $result;
             }
+
+            var $result = this.editControl = this._createTextBox();
             $result.val(value);
             return $result;
         },
@@ -2042,9 +2043,6 @@
         },
 
         _createTextBox: function() {
-            if (this.plainTextOnEdit) {
-                return $("<span>");
-            }
             return $("<input>").attr("type", "text")
                 .prop("readonly", !!this.readOnly);
         }
@@ -2588,6 +2586,7 @@
 
         css: "date-field",
         align: "center",
+        readOnly: false,
 
         sorter: function (date1, date2) {
             return new Date(date1) - new Date(date2);
@@ -2605,6 +2604,9 @@
         },
 
         editTemplate: function (value) {
+            if (this.readOnly) {
+                return this._editPicker = $("<span>").text(this.getDateString(new Date(value)));
+            }
             if (this.checkForDatePicker()) {
                 return this._editPicker = $("<input>").datepicker().datepicker("setDate", new Date(value));
             }
@@ -2619,6 +2621,9 @@
         },
 
         editValue: function () {
+            if (this.readOnly) {
+                return new Date(this._editPicker.text());
+            }
             if (this.checkForDatePicker()) {
                 return this._editPicker.datepicker("getDate").toISOString();
             }

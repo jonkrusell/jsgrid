@@ -42,11 +42,12 @@
             if(!this.editing)
                 return this.itemTemplate(value);
 
-            var $result = this.editControl = this._createTextBox();
-            if(this.plainTextOnEdit) {
-                $result.text(value);
+             if (this.plainTextOnEdit) {
+                var $result = this.editControl = $("<span>").text(value);
                 return $result;
             }
+
+            var $result = this.editControl = this._createTextBox();
             $result.val(value);
             return $result;
         },
@@ -67,9 +68,6 @@
         },
 
         _createTextBox: function() {
-            if (this.plainTextOnEdit) {
-                return $("<span>");
-            }
             return $("<input>").attr("type", "text")
                 .prop("readonly", !!this.readOnly);
         }

@@ -110,6 +110,15 @@
             $result.prop("disabled", !!this.readOnly);
 
             return $result;
+        },
+
+        exportValue: function (value) {
+            for (var item in this.items) {
+                if (value === this.items[item][this.valueField]) {
+                    return this.items[item][this.textField];
+                }
+            }
+            return "";
         }
     });
 

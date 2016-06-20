@@ -137,3 +137,64 @@
 .jsgrid-pager-page {
     padding: .2em .6em;
 }
+
+.jsgrid-modal-overlay {
+    background-color: #000;
+    opacity: 0.5;
+    position: fixed;
+    left: 0px;
+    top: 0px;
+    z-index: 1001;
+}
+
+.jsgrid-modal-container {
+    position: fixed;
+    z-index: 1002;
+    background: white;
+    border: 1px solid lightgrey;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.jsgrid-modal-container-scroll {
+    display: inline-block;
+    height: 100%;
+    width: 100%;
+    overflow-y: auto;
+    /* Firefox */
+    height: -moz-calc(100% - 30px);
+    /* WebKit */
+    height: -webkit-calc(100% - 30px);
+    /* Opera */
+    height: -o-calc(100% - 30px);
+    /* Standard */
+    height: calc(100% - 30px);
+}
+
+.jsgrid-modal-title {
+    height: 30px;
+    font-size: 14px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.jsgrid-modal-close {
+    z-index: 1003;
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    cursor: pointer;
+    width: 20px;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.jsgrid-modal-close:before {
+   content: "X";
+}
+
+.jsgrid-frozen-column {
+    position: relative;
+    box-shadow: -1px -1px 0px 0px #e9e9e9 inset;
+    background: white;
+}

@@ -126,9 +126,6 @@
         editing: false,
         editRowRenderer: null,
         editRowClass: "jsgrid-edit-row",
-        updateOnRowChange: false,
-        autoFocusOnInputAfterRowClick: false,
-        enableCheckBoxesBeforeEditing: false,
 
         confirmDeleting: true,
         deleteConfirm: "Are you sure?",
@@ -207,6 +204,19 @@
         tableClass: "jsgrid-table",
         gridHeaderClass: "jsgrid-grid-header",
         gridBodyClass: "jsgrid-grid-body",
+        
+        updateOnRowChange: false,
+        autoFocusOnInputAfterRowClick: false,
+        enableCheckBoxesBeforeEditing: false,
+        frozenColumns: 0,
+
+        superHeaderConfig: {
+            showColumnOptionsButton: false,
+            showCsvExport: false,
+            showExcelExport: false,
+            exportFilename: "csvExport",
+            showPrint: false
+        },
 
         _init: function(config) {
             $.extend(this, config);
@@ -240,6 +250,7 @@
         },
 
         _initFields: function() {
+            this.fieldExportFunctions = {};
             var self = this;
             self.fields = $.map(self.fields, function(field) {
                 if($.isPlainObject(field)) {
@@ -248,6 +259,16 @@
                 }
                 field._grid = self;
                 return field;
+            });
+
+            self.fields.forEach(function (field, index) {
+                if (field.exportValue) {
+                    self.fieldExportFunctions[field.name] = $.proxy(field.exportValue, field);
+                } else {
+                    self.fieldExportFunctions[field.name] = function (value) {
+                        return value;
+                    };
+                }
             });
         },
 
@@ -426,9 +447,182 @@
         },
         
         _createSuperHeader: function () {
-            var $superHeader = $("<div>");
-
+            var $superHeader = "";
+            if (this.superHeaderConfig.showColumnOptionsButton
+                || this.superHeaderConfig.showCsvExport
+                || this.superHeaderConfig.showExcelExport
+                || this.superHeaderConfig.showPrint) {
+                $superHeader = $("<div>");
+                if (this.superHeaderConfig.showColumnOptionsButton) {
+                    var showColumnOptionsButton = $('<button>', { text: 'Show/Hide Columns' })
+                        .on("click", $.proxy(this._showColumnOptions, this));
+                    $superHeader.append(showColumnOptionsButton);
+                }
+                if (this.superHeaderConfig.showCsvExport) {
+                    var exportCsvButton = $('<button>', { text: 'Export to csv' })
+                        .on("click", $.proxy(this._csvExport, this));
+                    $superHeader.append(exportCsvButton);
+                }
+                if (this.superHeaderConfig.showExcelExport) {
+                    var exportExcelButton = $('<button>', { text: 'Export to excel' })
+                        .on("click", $.proxy(this._excelExport, this));
+                    $superHeader.append(exportExcelButton);
+                }
+                if (this.superHeaderConfig.showPrint) {
+                    var printExcelButton = $('<button>', { text: 'Print' })
+                        .on("click", $.proxy(this._printExport, this));
+                    $superHeader.append(printExcelButton);
+                }
+            }
             return $superHeader;
+        },
+
+        _csvExport: function (e) {
+            var csvContent = "data:text/csv;charset=utf-8,";
+            var csvHeaderString = "";
+            this._eachField(function (field, index) {
+                csvHeaderString += (csvHeaderString === "") ? '"' : ', "';
+                csvHeaderString += (field.title ? field.title : field.name) + '"';
+            });
+            csvContent += csvHeaderString + "\n";
+            for (var i = 0; i < this.data.length; i++) {
+                var dataString = "";
+                this._eachField(function (field, index) {
+                    dataString += (dataString === "") ? '"' : ', "';
+                    dataString += this.fieldExportFunctions[field.name](this.data[i][field.name]) + '"';
+                });
+                csvContent += i < this.data.length ? dataString + "\n" : dataString;
+            }
+            var encodedUri = encodeURI(csvContent);
+            var link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", this.superHeaderConfig.exportFilename + ".csv");
+            $(link).css("display", "none");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            e.preventDefault();
+        },
+
+        _excelExport: function (e) {
+            var table = $('<table>');
+            var tr = $('<tr>');
+            this._eachField(function (field, index) {
+                var td = $('<th>').text(field.title ? field.title : field.name);
+                tr.append(td);
+            });
+            table.append(tr);
+            for (var i = 0; i < this.data.length; i++) {
+                var tr = $('<tr>');
+                this._eachField(function (field, index) {
+                    var td = $('<td>').text(this.fieldExportFunctions[field.name](this.data[i][field.name]));
+                    tr.append(td);
+                });
+                table.append(tr);
+            }
+            var xlsExport = $('<div>');
+            xlsExport.append(table);
+            var link = document.createElement("a");
+            link.setAttribute("href", "data:application/vnd.ms-excel," + xlsExport.html());
+            link.setAttribute("download", this.superHeaderConfig.exportFilename + ".xls");
+            $(link).css("display", "none");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            e.preventDefault();
+        },
+
+        _printExport: function (e) {
+            var exportFilename = this.superHeaderConfig.exportFilename;
+            var table = $('<table>');
+            var tr = $('<tr>');
+            this._eachField(function (field, index) {
+                var td = $('<th>').text(field.title ? field.title : field.name);
+                tr.append(td);
+            });
+            table.append(tr);
+            for (var i = 0; i < this.data.length; i++) {
+                var tr = $('<tr>');
+                this._eachField(function (field, index) {
+                    var td = $('<td>').text(this.fieldExportFunctions[field.name](this.data[i][field.name]));
+                    tr.append(td);
+                });
+                table.append(tr);
+            }
+            var printDiv = $('<div>').append(table);
+            var mywindow = window.open('', '', 'height=969,width=785');
+            mywindow.document.write('<html><head><title>' + exportFilename + '</title>');
+            mywindow.document.write('<style type="text/css">table,td,th{border:1px solid lightgrey;border-collapse:collapse;}</style>');
+            mywindow.document.write('</head><body><div style="width:100%; margin:0 auto;">');
+            mywindow.document.write(printDiv.html());
+            mywindow.document.write('</div></body></html>');
+            mywindow.document.close(); // necessary for IE >= 10
+            mywindow.focus(); // necessary for IE >= 10
+            mywindow.print();
+            mywindow.close();
+
+            e.preventDefault();
+        },
+
+        _showColumnOptions: function (e) {
+            if (this._columnOptionsDiv) {
+                this._columnOptionsDiv.show(150);
+            } else {
+                var table = $('<table>').addClass(this.tableClass);
+                table.css('margin', 'auto');
+                table.css('width', 'initial');
+                if (this.data.length > 0) {
+                    for (var columnIndex in this._headerRow[0].cells) {
+                        if (!isNaN(columnIndex)) {
+                            var tableCell = this._headerRow[0].cells[columnIndex];
+                            var tr = $('<tr>');
+                            var td = $('<td>').text($(tableCell).text());
+                            tr.append(td);
+                            var td2 = $('<td>');
+                            var currentlyVisible = this.fieldOption(columnIndex, "visible");
+                            var toggleButton = $('<input>', { type: 'checkbox', checked: currentlyVisible, "data-columnindex": columnIndex })
+                                .on("change", $.proxy(this._toggleColumnVisibility, this));
+                            toggleButton.css('cursor', 'pointer');
+                            td2.append(toggleButton);
+                            tr.append(td2);
+                            table.append(tr);
+                        }
+                    }
+                }
+
+                var windowHeight = window.innerHeight;
+                var windowWidth = window.innerWidth;
+                
+                this._columnOptionsDiv = $('<div>').css('display', 'none');
+                var overlay = $('<div>').addClass('jsgrid-modal-overlay').css('width', windowWidth).css('height', windowHeight);
+                this._columnOptionsDiv.append(overlay)
+                var container = $('<div>').addClass('jsgrid-modal-container').css('width', windowWidth * 0.6).css('height', windowHeight * 0.6)
+                    .css('left', windowWidth * 0.2).css('top', windowHeight * 0.2);
+                var modalTitleDiv = $('<div>').addClass('jsgrid-modal-title').text('Show/Hide Columns');
+                container.append(modalTitleDiv);
+                var closeButton = $('<a>').addClass('jsgrid-modal-close').on("click", $.proxy(this._hideColumnOptions, this));
+                container.append(closeButton);
+                var containerScroll = $('<div>').addClass('jsgrid-modal-container-scroll').append(table);
+                container.append(containerScroll);
+                this._columnOptionsDiv.append(container);
+                this._columnOptionsDiv.appendTo('body');
+                this._columnOptionsDiv.show(150);
+            }
+            e.preventDefault();
+        },
+
+        _hideColumnOptions: function (e) {
+            if (this._columnOptionsDiv) {
+                this._columnOptionsDiv.hide(150);
+            }
+            e.preventDefault();
+        },
+
+        _toggleColumnVisibility: function (e) {
+            var columnIndex = $(e.target).data('columnindex');
+            var currentVisibility = this.fieldOption(columnIndex, "visible");
+            this.fieldOption(columnIndex, "visible", !currentVisibility);
+            e.preventDefault();
         },
 
         _createHeader: function() {
@@ -458,6 +652,12 @@
                 .append($bodyGrid)
                 .on("scroll", $.proxy(function(e) {
                     this._header.scrollLeft(e.target.scrollLeft);
+                    if (this.frozenColumns > 0) {
+                        var scrollLeft = this._body.scrollLeft();
+                        var pageWidth = this._bodyGrid.width() - this._body.width() + this._scrollBarWidth();
+                        var left = scrollLeft < pageWidth ? scrollLeft : pageWidth;
+                        $('.jsgrid-frozen-column').css('left', left);
+                    }
                 }, this));
 
             return $body;
@@ -485,8 +685,11 @@
 
             this._eachField(function(field, index) {
                 var $th = this._prepareCell("<th>", field, "headercss")
-                    .append(field.headerTemplate ? field.headerTemplate() : "")
-                    .appendTo($result);
+                    .append(field.headerTemplate ? field.headerTemplate() : "");
+                if (this.frozenColumns > index) {
+                    $th.addClass('jsgrid-frozen-column');
+                }
+                $th.appendTo($result);
 
                 if(this.sorting && field.sorting) {
                     $th.addClass(this.sortableClass)
@@ -636,6 +839,8 @@
                 this._renderCells($result, item);
             }
 
+            var self = this;
+
             $result.addClass(this._getRowClasses(item, itemIndex))
                 .data(JSGRID_ROW_DATA_KEY, item)
                 .on("click", $.proxy(function(e) {
@@ -644,6 +849,7 @@
                         itemIndex: itemIndex,
                         event: e
                     });
+                    self._body.scroll();
                 }, this))
                 .on("dblclick", $.proxy(function(e) {
                     this.rowDoubleClick({
@@ -679,8 +885,12 @@
         },
 
         _renderCells: function($row, item) {
-            this._eachField(function(field) {
-                $row.append(this._createCell(item, field));
+           this._eachField(function (field, index) {
+                var td = this._createCell(item, field);
+                if (this.frozenColumns > index) {
+                    $(td).addClass('jsgrid-frozen-column');
+                }
+                $row.append(td);
             });
             return this;
         },
@@ -1289,12 +1499,15 @@
             } else {
                 var $result = $("<tr>").addClass(this.editRowClass);
 
-                this._eachField(function (field) {
+                this._eachField(function (field, index) {
                     var fieldValue = this._getItemFieldValue(item, field);
 
-                    this._prepareCell("<td>", field, "editcss")
-                        .append(field.editTemplate ? field.editTemplate(fieldValue, item) : "")
-                        .appendTo($result);
+                   var $td = this._prepareCell("<td>", field, "editcss")
+                        .append(field.editTemplate ? field.editTemplate(fieldValue, item) : "");
+                    if (this.frozenColumns > index) {
+                        $td.addClass('jsgrid-frozen-column');
+                    }
+                    $td.appendTo($result);
                 });
 
                 if ($.isFunction(this.onItemChanged)) {
@@ -1330,9 +1543,12 @@
 
                 var updatingItem = $updatingRow.data(JSGRID_ROW_DATA_KEY),
                     updatingItemIndex = this._itemIndex(updatingItem);
-                this.data[updatingItemIndex] = editedItem;
+                for (var prop in editedItem) {
+                    updatingItem[prop] = editedItem[prop];
+                }
+                this.data[updatingItemIndex] = updatingItem;
 
-                var $updatedRow = this._createRow(editedItem, updatingItemIndex);
+                var $updatedRow = this._createRow(updatingItem, updatingItemIndex);
                 $updatingRow.replaceWith($updatedRow);
                 $updatingRow.data(JSGRID_EDIT_ROW_DATA_KEY, $currentlyEditingRow);
             }

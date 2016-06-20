@@ -56,7 +56,7 @@
 
         editValue: function () {
             if (this.readOnly) {
-                return new Date(this._editPicker.text());
+                return new Date(this._editPicker.text()).toISOString();
             }
             if (this.checkForDatePicker()) {
                 return this._editPicker.datepicker("getDate").toISOString();
@@ -76,6 +76,10 @@
             var monthIndex = dateValue.getMonth();
             var year = dateValue.getFullYear();
             return (monthIndex + 1) + "/" + day + "/" + year;
+        },
+        
+        exportValue: function (value) {
+            return this.getDateString(new Date(value));
         }
     });
 
